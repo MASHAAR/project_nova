@@ -1,0 +1,96 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.8
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Build Docker Image
+          command: |
+            docker build -t my-nova-app .
+
+  sonar-cloud:
+    docker:
+      - image: circleci/python:3.8
+    resource_class: xlarge
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Install SonarCloud Scanner
+          command: |
+            pip install -r requirements.txt
+            curl -sS https://get.sonarsource.com/sonar-scanner-cli-4.6.2.2472-linux.zip -o sonar-scanner.zip
+            unzip sonar-scanner.zip
+            export PATH=$PATH:$PWD/sonar-scanner-4.6.2.2472-linux/bin
+      - run:
+          name: Run SonarCloud analysis
+          command: |
+            sonar-scanner \
+              -Dsonar.projectKey=<your_project_key> \
+              -Dsonar.organization=<your_organization> \
+              -Dsonar.host.url=https://sonarcloud.io \
+              -Dsonar.login=$SONAR_TOKEN
+
+  dev-docker-build:
+    docker:
+      - image: docker:stable
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - run:
+          name: Build Docker image
+          command: |
+            docker build -t my-simple-app .
+            export AWS_ACCESS_KEY_ID=${AWS_DEV_KEY_ID}
+            export AWS_SECRET_ACCESS_KEY=${AWS_DEV_ACCESS_KEY}
+            docker login -u AWS -p $(aws ecr get-login-password --region ${AWS_DEFAULT_REGION}) ${AWS_DEV_ECR_ENDPOINT}
+            docker tag my-simple-app:latest ${AWS_DEV_ECR_ENDPOINT}:latest
+            docker push ${AWS_DEV_ECR_ENDPOINT}:latest
+
+  dev-docker-deploy:
+    docker:
+      - image: docker:stable
+    steps:
+      - run:
+          name: Provision Built Image From ECR to EC2
+          command: |
+            apk add --no-cache py-pip
+            apk add --no-cache jq
+            pip install awscli==1.16.114
+      - run:
+          name: Deploy Docker image to EC2
+          command: |
+            export AWS_ACCESS_KEY_ID=${AWS_DEV_KEY_ID}
+            export AWS_SECRET_ACCESS_KEY=${AWS_DEV_ACCESS_KEY}
+            export ECR_IMAGE=${AWS_DEV_ECR_ENDPOINT}:latest
+            docker pull ${ECR_IMAGE}
+            docker stop my-container || true
+            docker rm my-container || true
+            docker run -d --name my-container -p 80:80 ${ECR_IMAGE}
+
+workflows:
+  version: 2.1
+  build_and_test:
+    jobs:
+      - build
+      - sonar-cloud:
+          requires:
+            - build
+      - dev-docker-build:
+          requires:
+            - sonar-cloud
+            - build
+          filters:
+            branches:
+              only: dev
+      - dev-docker-deploy:
+          requires:
+            - dev-docker-build
+          filters:
+            branches:
+              only: dev
