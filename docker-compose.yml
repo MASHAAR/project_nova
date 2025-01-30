@@ -1,0 +1,18 @@
+# Bonus task
+
+version: "3"
+services:
+  web:
+    image: nova-app
+    build: .
+    ports:
+      - "8080:80"
+
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: testdb
+    ports:
+      - "5432:5432"
