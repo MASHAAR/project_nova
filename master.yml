@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to deploy a VM with networking and security
+
+Resources:
+
+  # VPC (Virtual Private Cloud)
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+      EnableDnsSupport: "true"
+      EnableDnsHostnames: "true"
+
+  Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: "10.0.1.0/24"
+      AvailabilityZone: "us-east-1a"  # Use desired AZ
+      MapPublicIpOnLaunch: "true"
+
+  # Security Group to Allow HTTP, HTTPS, and SSH)
+  NovaWebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Allow HTTP, HTTPS, and SSH"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          FromPort: "80"
+          ToPort: "80"
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: "tcp"
+          FromPort: "443"
+          ToPort: "443"
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: "tcp"
+          FromPort: "22"
+          ToPort: "22"
+          CidrIp: "0.0.0.0/0"
+
+  # Elastic IP
+  ElasticIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: "vpc"
+
+  # EC2 Instance
+  NovaWebServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: "t2.micro"
+      ImageId: "ami-0c55b159cbfafe1f0" #example AMI ID
+      KeyName: "your-key" # SSH key name
+      SubnetId: !Ref Subnet
+      SecurityGroupIds:
+        - !Ref WebServerSecurityGroup
+      AssociatePublicIpAddress: "true"
+      Tags:
+        - Key: "Name"
+          Value: "WebServer"
