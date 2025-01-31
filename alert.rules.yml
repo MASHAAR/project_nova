@@ -1,0 +1,11 @@
+groups:
+  - name: WebsiteDown
+    rules:
+      - alert: WebsiteDown
+        expr: probe_success == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Web app is unavailable"
+          description: "The web app at {{ $labels.instance }} is not responding."

@@ -16,3 +16,19 @@ services:
       POSTGRES_DB: testdb
     ports:
       - "5432:5432"
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter
+    ports:
+      - "9115:9115"
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
