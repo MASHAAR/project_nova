@@ -1,6 +1,8 @@
 Nova Web Application DevOps Project
 Overview
-This project demonstrates various DevOps principles, including version control, containerization, infrastructure as code (IaC), CI/CD pipeline creation, and Site Reliability Engineering (SRE). The task simulates real-world practices by setting up and deploying a web application while focusing on automation, monitoring, and ensuring system reliability.
+This project demonstrates various DevOps principles, including version control, containerization, infrastructure as code (IaC), 
+CI/CD pipeline creation, and Site Reliability Engineering (SRE). 
+The task simulates real-world practices by setting up and deploying a web application while focusing on automation, monitoring, and ensuring system reliability.
 
 Project Breakdown
 Task 1: Version Control Integration
